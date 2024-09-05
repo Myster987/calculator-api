@@ -1,36 +1,28 @@
-use axum::{
-    extract::Path,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
-};
-use serde::Deserialize;
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Router};
 
-#[derive(Debug, Deserialize)]
-struct GreetingParams {
-    name: Option<String>,
-}
+async fn add_route(Path((first_num, second_num)): Path<(String, String)>) -> impl IntoResponse {
+    let first_num = match first_num.parse::<i64>() {
+        Ok(num) => num,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Enter only numbers".to_string()),
+    };
 
-async fn greet_someone(Json(request_body): Json<GreetingParams>) -> impl IntoResponse {
-    let name_to_greet = request_body.name.unwrap_or("World".to_string());
-    let return_value = format!("Hello {}!", name_to_greet);
+    let second_num = match second_num.parse::<i64>() {
+        Ok(num) => num,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Enter only numbers".to_string()),
+    };
 
-    (StatusCode::OK, return_value)
-}
-
-async fn greet_by_url(Path(name): Path<String>) -> impl IntoResponse {
-    let response = format!("Hello to {name:?}");
-
-    (StatusCode::OK, response)
+    let response_body = format!(
+        "{first_num} + {second_num} = {result}",
+        result = first_num + second_num
+    );
+    (StatusCode::OK, response_body)
 }
 
 #[tokio::main]
 async fn main() {
     let api = Router::new()
-        .route("/", get(|| async { "Hello maciek!" }))
-        .route("/greeting", post(greet_someone))
-        .route("/hello/:name", get(greet_by_url));
+        .route("/", get(|| async { "Hello world!" }))
+        .route("/add/:first_num/:second_num", get(add_route));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
